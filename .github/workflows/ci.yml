@@ -1,12 +1,7 @@
-name: StudyHub CI pipeline v1 - Testing Build and Push to ECR
+name: StudyHub CI pipeline v2 - Testing Build and Push to ECR
 
 on:
   workflow_dispatch:
-    inputs:
-      image_tag:
-        description: 'Custom Image Tag (to be left empty to use git commit SHA)'
-        required: false
-        default: ''
 
 env:
   AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
@@ -25,17 +20,6 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-
-      - name: Set Image Tag
-        id: prep
-        run: |
-          if [ -n "${{ github.event.inputs.image_tag }}" ]; then
-            TAG="${{ github.event.inputs.image_tag }}"
-          else
-            TAG="${{ github.sha }}"
-          fi
-          echo "IMAGE_TAG=${TAG}" >> $GITHUB_ENV
-          echo "Selected Image Tag: ${TAG}"
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -61,7 +45,7 @@ jobs:
           file: ./server/Dockerfile
           push: true
           tags: |
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_BACKEND }}:${{ env.IMAGE_TAG }}
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_BACKEND }}:${{ github.sha }}
             ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_BACKEND }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -76,7 +60,7 @@ jobs:
             NGINX_CONFIG=default.k8s.conf
           push: true
           tags: |
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_FRONTEND }}:${{ env.IMAGE_TAG }}
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_FRONTEND }}:${{ github.sha }}
             ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_FRONTEND }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
